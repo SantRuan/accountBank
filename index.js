@@ -29,7 +29,11 @@ function operation() {
 
             if (action === 'Criar conta') {
                 createAccount()
-            } else if (action === 'Consultar Saldo') { }
+            } else if (action === 'Consultar Saldo') { 
+                
+                getAccountBalance()
+
+            }
 
 
             else if (action === 'Depositar') {
@@ -39,7 +43,7 @@ function operation() {
             }
 
             else if (action === 'Sacar') {
-
+                withdrawn()
             }
 
             else if (action === 'Sair') {
@@ -189,3 +193,93 @@ function getAccount(accountName){
     return JSON.parse(accountJSON) // aqui transformamos o texto em arquivo JSON
 }
 
+function getAccountBalance(){
+    
+    inquirer.prompt([{
+        name: 'accountName',
+        message: 'Digite o nome da conta: '
+    }]).then((answer)=>{
+        const accountName = answer['accountName']
+
+        // Verificar se a conta existe
+
+
+        if(!checkAccount(accountName)){
+            return getAccountBalance()
+        }
+
+        // Se a conta existir, pegaremos os dados dela
+
+        const accountData =  getAccount(accountName)
+        console.log(` O valor na conta é de  R$${accountData.balance}`)
+        
+        operation()
+    })
+    
+    
+    
+    .catch( (err) => {console.log(err)})
+
+}
+
+
+// Saca um valor da conta do usuário
+
+function withdrawn(){
+
+    inquirer.prompt([{
+        name: 'accountName',
+        message: 'Qual o nome da sua conta?'
+
+    }]).then((answer)=>{
+
+    const accountName =  answer['accountName']
+
+    if(!checkAccount(accountName)){
+        return withdrawn()
+    }
+    
+    inquirer.prompt([{
+        name: 'amount',
+        message: 'Quanto você deseja sacar?'
+
+    }]).then( (answer)=>{
+        const amount = answer['amount']
+       removeAmount(accountName,amount)
+    }
+    ).catch(err =>{ console.log(err)})
+
+
+
+
+    }).catch(err =>{ console.log(err)})
+
+}
+
+
+function removeAmount(accountName, amount){
+
+    const accountData =  getAccount(accountName)
+
+    if(!amount){
+        console.log('Tente novamente')
+        return withdrawn()
+    }
+
+    if(accountData.balance < amount){
+        console.log('Valor Indisponível')
+        return withdrawn()
+    }
+
+    accountData.balance = parseFloat(accountData.balance) - parseFloat(amount)
+    fs.writeFileSync(
+    `accounts/${accountName}.json`,
+    JSON.stringify(accountData),
+    function(err){
+        console.log(err)
+    },
+    )
+
+    console.log(`Saque realizado com sucesso de ${amount}, valor no disponível de : ${accountData.balance}`)
+    operation()
+}
